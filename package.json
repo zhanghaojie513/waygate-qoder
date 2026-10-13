@@ -22,14 +22,14 @@
   "main": "./dist/index.js",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.test.json",
-    "dev": "node --experimental-strip-types src/index.ts",
-    "prepare": "npm run build"
+    "dev": "node --experimental-strip-types src/index.ts"
   },
   "dependencies": {
     "@waygate/core": "github:zhanghaojie513/waygate-core"
