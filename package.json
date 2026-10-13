@@ -28,7 +28,8 @@
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.test.json",
-    "dev": "node --experimental-strip-types src/index.ts"
+    "dev": "node --experimental-strip-types src/index.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@waygate/core": "github:zhanghaojie513/waygate-core"
