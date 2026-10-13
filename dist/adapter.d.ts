@@ -9,9 +9,8 @@ import { type QoderIdentity } from './credential.js';
 import { CredentialError } from './errors.js';
 /** 凭证落盘位置（`~/.waygate/qoc/credential.json`）—— 首次 login 后复用，避免每次读客户端文件。 */
 export declare function credentialPath(): string;
-/** 取身份材料：优先本地缓存副本（login 落盘），否则现读客户端登录态。 */
 export declare function resolveIdentity(): QoderIdentity;
-/** 落盘身份材料（0600）。 */
+/** 落盘身份材料（0600）并更新内存缓存。 */
 export declare function saveIdentity(identity: QoderIdentity): string;
 export declare function createQoderAdapter(opts?: {
     baseUrl?: string;

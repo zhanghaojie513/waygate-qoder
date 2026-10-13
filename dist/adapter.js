@@ -17,17 +17,27 @@ import { toQoderRequest } from './protocol/translate.js';
 export function credentialPath() {
     return join(commandDir('qoc'), 'credential.json');
 }
-/** 取身份材料：优先本地缓存副本（login 落盘），否则现读客户端登录态。 */
+/**
+ * 取身份材料：优先本地缓存副本（login 落盘），否则现读客户端登录态。
+ * [复核修正] 加内存缓存 —— 此前每个聊天请求都调本函数；凭证文件不存在时
+ * 每次都会走 DPAPI 解密（起 PowerShell 进程），代价极高。
+ */
+let identityCache = null;
 export function resolveIdentity() {
+    if (identityCache)
+        return identityCache;
     const cached = credentialPath();
     if (existsSync(cached)) {
         const parsed = JSON.parse(readFileSync(cached, 'utf8'));
-        if (parsed.token && parsed.uid)
+        if (parsed.token && parsed.uid) {
+            identityCache = parsed;
             return parsed;
+        }
     }
-    return readQoderIdentity();
+    identityCache = readQoderIdentity();
+    return identityCache;
 }
-/** 落盘身份材料（0600）。 */
+/** 落盘身份材料（0600）并更新内存缓存。 */
 export function saveIdentity(identity) {
     const path = credentialPath();
     writeFileSync(path, JSON.stringify(identity, null, 2) + '\n', { mode: 0o600 });
@@ -37,6 +47,7 @@ export function saveIdentity(identity) {
     catch {
         /* Windows 语义有限 */
     }
+    identityCache = identity;
     return path;
 }
 function mask(s) {
@@ -68,8 +79,10 @@ export function createQoderAdapter(opts = {}) {
             return loadModels(baseUrl, resolveIdentity());
         },
         async doctorChecks() {
+            /* [复核修正] 此前 .catch(()=>null) 吞掉了所有网络错误 → 「上游连通」恒报 ✓。
+               fetch 只在网络不可达（DNS/超时/拒连）时抛错；HTTP 404/502 不抛（反而证明可达）。 */
             try {
-                await fetch(`${baseUrl}/healthz`, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+                await fetch(`${baseUrl}/healthz`, { signal: AbortSignal.timeout(8000) });
                 return [{ name: '上游连通', ok: true, detail: `${baseUrl} 可达` }];
             }
             catch (err) {
