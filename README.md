@@ -63,7 +63,7 @@ qoc
 qoc                  # 启动反代（同 qoc serve），打印模型 ID 与代理地址
 qoc models           # 只列出模型 ID（不起服务）
 qoc checkin          # 每日签到领 100 Credits（用本工具令牌代签，无需开客户端）
-qoc credits          # 积分概况（累计消耗 / 单日峰值 / 连续活跃）
+qoc credits          # 积分概况（剩余余额 / 累计消耗 / 连续活跃）
 qoc doctor           # 自检：端口 / 凭证 / 模型清单 / 上游连通
 qoc login            # 重新读取客户端登录态（令牌过期时用）
 ```
@@ -72,8 +72,10 @@ qoc login            # 重新读取客户端登录态（令牌过期时用）
 > `checkin` / `credits` 走 Qoder 的 OpenAPI（`openapi.qoder.com.cn`），鉴权只用客户端登录态里的
 > Bearer 令牌 —— **签到不需要打开 Qoder 客户端**，也不会顶掉你的桌面登录。
 >
-> **积分口径**：Qoder 上游**没有余额端点**。`credits` 显示的是**累计消耗**（`totalCredits`，
-> 等于逐日用量求和）与**单日峰值**，不是账户余额 —— 这里如实呈现上游给了什么，不做估算。
+> **积分口径有两个，别混**：`credits` 顶部显示的**剩余积分**来自 `v2/me/usage`
+> （`addOnQuota` 资源包 + `userQuota` 套餐内）—— 签到赠送的 100 Credits 就进这个资源包，
+> 与桌面端「我的用量」那张卡一致。下方的**累计消耗**（`credits-summary.totalCredits`）
+> 是历史累计花掉的量（等于逐日用量求和），**不是余额**。
 
 | 参数 | 说明 |
 | --- | --- |

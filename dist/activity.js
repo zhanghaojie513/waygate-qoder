@@ -9,9 +9,13 @@
  *
  *   GET  /sash/api/v1/me/campaigns                        → 活动列表（含可领的签到）
  *   POST /sash/api/v1/me/campaigns/{campaignId}/claim     → 领取（**要 UUID，不是 campaignKey**）
- *   GET  /sash/api/v1/ai-conversations/credits-summary    → 积分总览
+ *   GET  /sash/api/v2/me/usage                            → **真实余额**（套餐内 + 资源包）★
+ *   GET  /sash/api/v1/ai-conversations/credits-summary    → 历史累计消耗（不是余额）
  *   GET  /sash/api/v1/ai-conversations/seat-activity      → 连续活跃天数
  *   GET  /sash/api/v1/ai-conversations/credits-heatmap    → 每日消耗热力图
+ *
+ * ⚠️ 余额与累计消耗是**两个口径**：`v2/me/usage` 的 `addOnQuota`（资源包，签到赠送进这里）
+ * 才是余额；`credits-summary.totalCredits` 是历史累计消耗。别混用。
  *
  * ## 签到规则（上游文案，实测）
  * 「每天领 100 Credits」：每日 **10:00（UTC+8）** 刷新，领取后 **30 天**有效，
@@ -136,7 +140,7 @@ export class QoderActivity {
     /**
      * 积分概况。
      * ⚠️ `totalCredits` 是**累计消耗**（近一年窗口内花掉的 credits），
-     * 实测精确等于 heatmap 每日消耗之和 —— **不是余额**（上游无余额端点）。
+     * 实测精确等于 heatmap 每日消耗之和 —— **不是余额**（余额见 quotaUsage()）。
      * `peakCredits` 是其中单日最高消耗。
      */
     async creditsSummary() {
@@ -146,6 +150,32 @@ export class QoderActivity {
             peak: num(b.peakCredits),
             peakDate: typeof b.peakDate === 'string' ? b.peakDate : null,
             unit: typeof b.unit === 'string' ? b.unit : 'credits',
+        };
+    }
+    /**
+     * **真实余额**（`v2/me/usage`）—— 桌面端「我的用量」那张卡的数据源。
+     * 客户端 asar 里 v1/v2 端点并存，余额只在 v2；免费档套餐内为 0，签到全进资源包 `addOn`。
+     */
+    async quotaUsage() {
+        const b = await this.call('/sash/api/v2/me/usage');
+        const u = b.qoderUsage && typeof b.qoderUsage === 'object' ? b.qoderUsage : {};
+        const pick = (v) => {
+            if (!v || typeof v !== 'object')
+                return null;
+            const o = v;
+            return {
+                total: num(o.total),
+                used: num(o.used),
+                remaining: num(o.remaining),
+                unit: typeof o.unit === 'string' && o.unit ? o.unit : null,
+            };
+        };
+        return {
+            userType: typeof u.userType === 'string' && u.userType ? u.userType : null,
+            plan: pick(u.userQuota),
+            addOn: pick(u.addOnQuota),
+            orgResourcePackage: pick(u.orgResourcePackage),
+            isQuotaExceeded: typeof u.isQuotaExceeded === 'boolean' ? u.isQuotaExceeded : null,
         };
     }
     /** 连续活跃天数（相当于「连签」）。 */
@@ -206,12 +236,28 @@ function fmtCredits(v) {
         return '—';
     return v.toFixed(4).replace(/\.?0+$/, '') || '0';
 }
-/** 人读渲染：积分总览。 */
-export function renderCredits(s, seat, daily) {
+/** 人读渲染：积分总览（余额在前，累计消耗在后 —— 余额才是用户关心的）。 */
+export function renderCredits(s, seat, daily, quota) {
     const lines = [];
     lines.push('Qoder CN 积分概况');
     lines.push('');
-    lines.push(`累计消耗  ${fmtCredits(s.total)} ${s.unit}`);
+    /* 余额（v2/me/usage）：有余额就置顶显示 —— 这是桌面端「我的用量」的口径。 */
+    const addOn = quota?.addOn ?? null;
+    const plan = quota?.plan ?? null;
+    const planTouched = plan !== null && ((plan.total ?? 0) > 0 || (plan.remaining ?? 0) > 0);
+    if (addOn && addOn.remaining !== null) {
+        if (planTouched && plan.remaining !== null) {
+            lines.push(`剩余积分  ${fmtCredits((plan.remaining ?? 0) + (addOn.remaining ?? 0))} ${addOn.unit ?? 'credits'}`
+                + `（套餐内 ${fmtCredits(plan.remaining)} + 资源包 ${fmtCredits(addOn.remaining)}）`);
+        }
+        else {
+            lines.push(`剩余积分  ${fmtCredits(addOn.remaining)} / ${fmtCredits(addOn.total)} ${addOn.unit ?? 'credits'}`);
+        }
+        if (quota?.isQuotaExceeded === true)
+            lines.push('状态      额度已用尽');
+        lines.push('');
+    }
+    lines.push(`累计消耗  ${fmtCredits(s.total)} ${s.unit}（历史，非余额）`);
     if (s.peak !== null)
         lines.push(`单日峰值  ${fmtCredits(s.peak)}${s.peakDate ? `（${s.peakDate}）` : ''}`);
     if (seat.currentConsecutiveDays !== null) {
@@ -226,6 +272,7 @@ export function renderCredits(s, seat, daily) {
             lines.push(`  ${d.date}  ${fmtCredits(d.value)}`);
     }
     lines.push('');
-    lines.push('注：每日可领 100 Credits（10:00 UTC+8 刷新，30 天有效）—— 用 `qoc checkin` 领取。');
+    lines.push('注：每日可领 100 Credits（10:00 UTC+8 刷新，30 天有效）—— 用 `qoc checkin` 领取，');
+    lines.push('    赠送的 Credits 进「资源包」，即上面的剩余积分。');
     return lines.join('\n');
 }

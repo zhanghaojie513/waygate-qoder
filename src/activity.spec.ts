@@ -118,6 +118,31 @@ describe('QoderActivity.credits', () => {
     expect(daily).toHaveLength(2); // 过滤掉 value=0 的那天
     expect(daily[0]).toEqual({ date: '2026-10-12', value: 240.55 });
   });
+
+  it('quotaUsage：解析 v2/me/usage 的真实余额（资源包 + 套餐内）', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (u: string) => {
+      if (String(u).includes('v2/me/usage')) {
+        return ok({
+          displayMode: 'qoder',
+          qoderUsage: {
+            userId: 'u1',
+            userType: 'personal_standard',
+            userQuota: { total: 0, used: 0, remaining: 0, percentage: 0, unit: 'credits' },
+            addOnQuota: { total: 500, used: 5, remaining: 495, percentage: 0.02, unit: 'credits' },
+            isQuotaExceeded: false,
+          },
+        });
+      }
+      return ok({});
+    }));
+    const a = new QoderActivity(async () => 'tok');
+    const q = await a.quotaUsage();
+    expect(q.userType).toBe('personal_standard');
+    expect(q.addOn).toEqual({ total: 500, used: 5, remaining: 495, unit: 'credits' });
+    expect(q.plan?.total).toBe(0);
+    expect(q.orgResourcePackage).toBeNull(); // 个人档没有组织资源包
+    expect(q.isQuotaExceeded).toBe(false);
+  });
 });
 
 describe('渲染', () => {
@@ -134,5 +159,24 @@ describe('渲染', () => {
     expect(text).toContain('累计消耗  241.81');
     expect(text).toContain('连续活跃  3 天');
     expect(text).toContain('qoc checkin');
+  });
+
+  it('renderCredits：有余额时置顶显示资源包剩余（余额优先于累计消耗）', () => {
+    const text = renderCredits(
+      { total: 241.81, peak: 240.55, peakDate: '2026-10-12', unit: 'credits' },
+      { currentConsecutiveDays: 3, maxConsecutiveDays: 3, cumulativeActiveDays: 3, lastActiveDate: null },
+      [],
+      {
+        userType: 'personal_standard',
+        plan: { total: 0, used: 0, remaining: 0, unit: 'credits' },
+        addOn: { total: 500, used: 5, remaining: 495, unit: 'credits' },
+        orgResourcePackage: null,
+        isQuotaExceeded: false,
+      },
+    );
+    /* 余额行在累计消耗之前（用户先看到余额）。 */
+    expect(text).toContain('剩余积分  495 / 500 credits');
+    expect(text.indexOf('剩余积分')).toBeLessThan(text.indexOf('累计消耗'));
+    expect(text).toContain('（历史，非余额）');
   });
 });

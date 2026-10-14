@@ -88,11 +88,18 @@ export function createQoderAdapter(opts: { baseUrl?: string; chatPath?: string }
       },
       {
         name: 'credits',
-        summary: '积分概况（累计消耗 / 单日峰值 / 连续活跃）',
+        summary: '积分概况（剩余余额 / 累计消耗 / 连续活跃）',
         usage: 'credits',
         async run({ json }) {
-          const [s, seat, daily] = await Promise.all([activity.creditsSummary(), activity.seatActivity(), activity.recentDailyUsage(7)]);
-          return json ? JSON.stringify({ summary: s, seatActivity: seat, recentDaily: daily }, null, 2) : renderCredits(s, seat, daily);
+          const [s, seat, daily, quota] = await Promise.all([
+            activity.creditsSummary(),
+            activity.seatActivity(),
+            activity.recentDailyUsage(7),
+            activity.quotaUsage().catch(() => null),
+          ]);
+          return json
+            ? JSON.stringify({ summary: s, seatActivity: seat, recentDaily: daily, quotaUsage: quota }, null, 2)
+            : renderCredits(s, seat, daily, quota);
         },
       },
     ],

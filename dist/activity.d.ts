@@ -9,9 +9,13 @@
  *
  *   GET  /sash/api/v1/me/campaigns                        → 活动列表（含可领的签到）
  *   POST /sash/api/v1/me/campaigns/{campaignId}/claim     → 领取（**要 UUID，不是 campaignKey**）
- *   GET  /sash/api/v1/ai-conversations/credits-summary    → 积分总览
+ *   GET  /sash/api/v2/me/usage                            → **真实余额**（套餐内 + 资源包）★
+ *   GET  /sash/api/v1/ai-conversations/credits-summary    → 历史累计消耗（不是余额）
  *   GET  /sash/api/v1/ai-conversations/seat-activity      → 连续活跃天数
  *   GET  /sash/api/v1/ai-conversations/credits-heatmap    → 每日消耗热力图
+ *
+ * ⚠️ 余额与累计消耗是**两个口径**：`v2/me/usage` 的 `addOnQuota`（资源包，签到赠送进这里）
+ * 才是余额；`credits-summary.totalCredits` 是历史累计消耗。别混用。
  *
  * ## 签到规则（上游文案，实测）
  * 「每天领 100 Credits」：每日 **10:00（UTC+8）** 刷新，领取后 **30 天**有效，
@@ -58,6 +62,24 @@ export interface CreditsSummary {
     peakDate: string | null;
     unit: string;
 }
+/** 一组额度（套餐内 / 资源包 / 组织资源包同形）。 */
+export interface Quota {
+    total: number | null;
+    used: number | null;
+    remaining: number | null;
+    unit: string | null;
+}
+/** `v2/me/usage` 解析结果 —— **真实余额**。 */
+export interface QuotaUsage {
+    userType: string | null;
+    /** 套餐内 Credits（免费档为 0/0/0）。 */
+    plan: Quota | null;
+    /** 资源包 —— 签到赠送的 Credits 进这里（桌面端「我的用量」展示的那一项）。 */
+    addOn: Quota | null;
+    /** 组织资源包（企业版才有）。 */
+    orgResourcePackage: Quota | null;
+    isQuotaExceeded: boolean | null;
+}
 export interface SeatActivity {
     currentConsecutiveDays: number | null;
     maxConsecutiveDays: number | null;
@@ -79,10 +101,15 @@ export declare class QoderActivity {
     /**
      * 积分概况。
      * ⚠️ `totalCredits` 是**累计消耗**（近一年窗口内花掉的 credits），
-     * 实测精确等于 heatmap 每日消耗之和 —— **不是余额**（上游无余额端点）。
+     * 实测精确等于 heatmap 每日消耗之和 —— **不是余额**（余额见 quotaUsage()）。
      * `peakCredits` 是其中单日最高消耗。
      */
     creditsSummary(): Promise<CreditsSummary>;
+    /**
+     * **真实余额**（`v2/me/usage`）—— 桌面端「我的用量」那张卡的数据源。
+     * 客户端 asar 里 v1/v2 端点并存，余额只在 v2；免费档套餐内为 0，签到全进资源包 `addOn`。
+     */
+    quotaUsage(): Promise<QuotaUsage>;
     /** 连续活跃天数（相当于「连签」）。 */
     seatActivity(): Promise<SeatActivity>;
     /** 每日消耗（热力图原始数据，取有值的最后 N 天）。 */
@@ -93,8 +120,8 @@ export declare class QoderActivity {
 }
 /** 人读渲染：签到结果。 */
 export declare function renderCheckin(r: ClaimResult): string;
-/** 人读渲染：积分总览。 */
+/** 人读渲染：积分总览（余额在前，累计消耗在后 —— 余额才是用户关心的）。 */
 export declare function renderCredits(s: CreditsSummary, seat: SeatActivity, daily: Array<{
     date: string;
     value: number;
-}>): string;
+}>, quota?: QuotaUsage | null): string;
