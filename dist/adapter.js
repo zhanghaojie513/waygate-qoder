@@ -8,6 +8,7 @@ import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { commandDir } from 'waygate-core';
 import { readQoderIdentity } from './credential.js';
+import { QoderActivity, renderCheckin, renderCredits } from './activity.js';
 import { CredentialError, UpstreamError } from './errors.js';
 import { loadModels } from './models.js';
 import { buildCosyBearer, cosyChatHeaders, DEFAULT_QODER_BASE_URL, DEFAULT_QODER_CHAT_PATH, newCosySession, qEncode, } from './protocol/cosy.js';
@@ -53,11 +54,34 @@ export function saveIdentity(identity) {
 export function createQoderAdapter(opts = {}) {
     const baseUrl = opts.baseUrl ?? DEFAULT_QODER_BASE_URL;
     const chatPath = opts.chatPath ?? DEFAULT_QODER_CHAT_PATH;
+    /* 签到/积分用同一个 access token（无需额外登录）。 */
+    const activity = new QoderActivity(async () => resolveIdentity().token);
     return {
         command: 'qoc',
         displayName: 'Qoder CN',
         defaultPort: 8789,
         upstreamLabel: `${baseUrl}  (COSY 签名协议)`,
+        /** Qoder 专属：每日签到 + 积分概况。 */
+        extraCommands: [
+            {
+                name: 'checkin',
+                summary: '每日签到领 100 Credits（用本工具令牌代签，无需开客户端）',
+                usage: 'checkin',
+                async run({ json }) {
+                    const r = await activity.checkin();
+                    return json ? JSON.stringify(r, null, 2) : renderCheckin(r);
+                },
+            },
+            {
+                name: 'credits',
+                summary: '积分概况（累计消耗 / 单日峰值 / 连续活跃）',
+                usage: 'credits',
+                async run({ json }) {
+                    const [s, seat, daily] = await Promise.all([activity.creditsSummary(), activity.seatActivity(), activity.recentDailyUsage(7)]);
+                    return json ? JSON.stringify({ summary: s, seatActivity: seat, recentDaily: daily }, null, 2) : renderCredits(s, seat, daily);
+                },
+            },
+        ],
         async credentialStatus() {
             try {
                 const id = resolveIdentity();
