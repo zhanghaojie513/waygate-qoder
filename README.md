@@ -6,6 +6,7 @@
 
 把 Qoder CN 客户端的订阅，变成你自己的本地 API
 
+[![npm](https://img.shields.io/npm/v/waygate-qoder?style=flat-square&color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/waygate-qoder)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A520-3C873A?style=flat-square&logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
@@ -34,7 +35,7 @@ qoc
 ```
 
 ```
-途关 · Qoder CN 反代 v0.1.2
+途关 · Qoder CN 反代 v0.1.4
 
 凭证    ✓ 已登录：你的账号（uid 01a0d156…）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)
