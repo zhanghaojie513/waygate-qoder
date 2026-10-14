@@ -35,7 +35,7 @@ qoc
 ```
 
 ```
-途关 · Qoder CN 反代 v0.2.1
+途关 · Qoder CN 反代 v0.2.2
 
 凭证    ✓ 已登录：你的账号（uid 01a0d156…）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)

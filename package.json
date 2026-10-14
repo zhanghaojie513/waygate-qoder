@@ -1,6 +1,6 @@
 {
   "name": "waygate-qoder",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Qoder CN 本地反代：读取本机客户端登录态，提供 Anthropic/OpenAI 兼容的本地聊天端点",
   "keywords": [
     "qoder",
