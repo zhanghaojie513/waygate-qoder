@@ -6,7 +6,7 @@
  */
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { commandDir } from '@waygate/core';
+import { commandDir } from 'waygate-core';
 import { readQoderIdentity } from './credential.js';
 import { CredentialError, UpstreamError } from './errors.js';
 import { loadModels } from './models.js';
@@ -50,9 +50,6 @@ export function saveIdentity(identity) {
     identityCache = identity;
     return path;
 }
-function mask(s) {
-    return s.length > 10 ? `${s.slice(0, 6)}…(${s.length}B)` : '***';
-}
 export function createQoderAdapter(opts = {}) {
     const baseUrl = opts.baseUrl ?? DEFAULT_QODER_BASE_URL;
     const chatPath = opts.chatPath ?? DEFAULT_QODER_CHAT_PATH;
@@ -64,7 +61,12 @@ export function createQoderAdapter(opts = {}) {
         async credentialStatus() {
             try {
                 const id = resolveIdentity();
-                return { ok: true, detail: `${id.name}（uid ${id.uid.slice(0, 8)}…，令牌 ${mask(id.token)}）`, source: existsSync(credentialPath()) ? credentialPath() : undefined };
+                /* 只显示账号与 uid 前缀 —— **绝不回显令牌**（哪怕打码，前几位也是敏感信息）。 */
+                return {
+                    ok: true,
+                    detail: `已登录：${id.name}（uid ${id.uid.slice(0, 8)}…）`,
+                    source: existsSync(credentialPath()) ? credentialPath() : undefined,
+                };
             }
             catch (err) {
                 return { ok: false, detail: err.message };

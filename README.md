@@ -27,19 +27,20 @@ Cursor、Claude Code、Cherry Studio、任何能改 base_url 的工具，都能�
 
 ```bash
 # 全局安装（之后命令就是 qoc）
-npm i -g git+https://github.com/zhanghaojie513/waygate-qoder.git
+npm i -g waygate-qoder
 
 # 启动
 qoc
 ```
 
 ```
-途关 · Qoder CN 反代 v0.1.0
+途关 · Qoder CN 反代 v0.1.2
 
-凭证    ✓ 你的账号（uid 01a0d156…）
+凭证    ✓ 已登录：你的账号（uid 01a0d156…）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)
-代理    http://127.0.0.1:8789
-密钥    sk-qoc-3f8a…c21d
+代理    http://127.0.0.1:8789/v1   （OpenAI 系客户端：Cursor / Cherry Studio / OpenAI SDK）
+        http://127.0.0.1:8789      （Anthropic 系客户端：Claude Code，它自己会补 /v1）
+密钥    sk-qoc-1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d
 
 模型 ID（填进你的客户端）：
   qmodel_38max   Qwen3.8-Max
@@ -51,7 +52,6 @@ qoc
 按 Ctrl+C 停止。
 ```
 
-> 仓库已包含构建产物（`dist/`），从 GitHub 安装**无需本地构建**、无需 npm 账号。
 > 不想全局装：`git clone` 后 `npm install && npm run build && node dist/index.js`。
 
 **要求**：Node.js ≥ 20；本机装有 Qoder CN 桌面客户端**且已登录**。
@@ -145,7 +145,7 @@ flowchart LR
 ## 相关项目
 
 - **waygate-mmcode** —— 同款工具，对应 MiniMax Code（*即将发布*）
-- **[waygate-core](https://github.com/zhanghaojie513/waygate-core)** —— 两个工具共用的骨架
+- **[waygate-core](https://github.com/zhanghaojie513/waygate-core)** —— 两个工具共用的骨架（`npm i waygate-core`）
 - **[relay-station](https://github.com/zhanghaojie513/relay-station)** —— 同一作者的完整多提供商反代（含控制台、用量统计）
 
 ## License

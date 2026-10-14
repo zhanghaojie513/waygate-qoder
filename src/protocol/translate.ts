@@ -19,7 +19,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type { ChatMessage, ChatRequestBody } from '@waygate/core';
+import type { ChatMessage, ChatRequestBody } from 'waygate-core';
 
 /** Qoder 消息（v1：纯文本形态 + 空白 response_meta）。 */
 interface QoderMessage {

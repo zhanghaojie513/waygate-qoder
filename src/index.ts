@@ -6,7 +6,7 @@
  * 供 Cursor / Claude Code / Cherry Studio 等客户端使用。只在本机读写与转发，不上传任何数据。
  */
 
-import { runCli } from '@waygate/core';
+import { runCli } from 'waygate-core';
 import { createQoderAdapter } from './adapter.js';
 
 const VERSION = '0.1.0';

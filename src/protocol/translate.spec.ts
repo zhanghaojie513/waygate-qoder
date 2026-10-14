@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { buildQoderMessages, toQoderRequest } from './translate.js';
-import type { ChatMessage, ChatRequestBody } from '@waygate/core';
+import type { ChatMessage, ChatRequestBody } from 'waygate-core';
 
 const msg = (role: string, content: string | null, extra: Record<string, unknown> = {}): ChatMessage =>
   ({ role, content, ...extra }) as ChatMessage;

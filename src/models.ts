@@ -7,7 +7,7 @@
 
 import { buildCosyBearer, cosyChatHeaders, newCosySession, type CosySession } from './protocol/cosy.js';
 import type { QoderIdentity } from './credential.js';
-import type { ModelEntry } from '@waygate/core';
+import type { ModelEntry } from 'waygate-core';
 import { UpstreamError } from './errors.js';
 
 export const QODER_MODEL_LIST_PATH = '/algo/api/v2/model/list?Encode=1';

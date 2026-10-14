@@ -4,7 +4,7 @@
  * 职责：凭证（读客户端登录态）→ 协议（COSY 签名 + 翻译 + 流解码）→ 交给 core 的 HTTP 服务。
  * 上游知识全在本文件与 protocol/ 里，core 不含任何 Qoder 细节。
  */
-import { type Adapter } from '@waygate/core';
+import { type Adapter } from 'waygate-core';
 import { type QoderIdentity } from './credential.js';
 import { CredentialError } from './errors.js';
 /** 凭证落盘位置（`~/.waygate/qoc/credential.json`）—— 首次 login 后复用，避免每次读客户端文件。 */

@@ -17,7 +17,7 @@
  * parameters；网关是裁判。max_tokens 缺省补 8192（官方客户端自己的回落）。
  * reasoning_effort 若客户端给了（o 系参数），映射 model_config.is_reasoning。
  */
-import type { ChatMessage, ChatRequestBody } from '@waygate/core';
+import type { ChatMessage, ChatRequestBody } from 'waygate-core';
 /** Qoder 消息（v1：纯文本形态 + 空白 response_meta）。 */
 interface QoderMessage {
     role: 'user' | 'assistant';

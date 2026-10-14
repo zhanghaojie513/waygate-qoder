@@ -6,7 +6,7 @@
  */
 import { type CosySession } from './protocol/cosy.js';
 import type { QoderIdentity } from './credential.js';
-import type { ModelEntry } from '@waygate/core';
+import type { ModelEntry } from 'waygate-core';
 export declare const QODER_MODEL_LIST_PATH = "/algo/api/v2/model/list?Encode=1";
 /** 从网关响应里抽模型（取 chat 场景；enable=false 的跳过）。 */
 export declare function parseQoderModels(payload: unknown): ModelEntry[];
