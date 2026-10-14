@@ -241,7 +241,7 @@ export function renderCredits(s, seat, daily, quota) {
     const lines = [];
     lines.push('Qoder CN 积分概况');
     lines.push('');
-    /* 余额（v2/me/usage）：有余额就置顶显示 —— 这是桌面端「我的用量」的口径。 */
+    /* ── 余额（v2/me/usage）：置顶 —— 这是桌面端「我的用量」的口径，也是唯一「还能用多少」的数。 ── */
     const addOn = quota?.addOn ?? null;
     const plan = quota?.plan ?? null;
     const planTouched = plan !== null && ((plan.total ?? 0) > 0 || (plan.remaining ?? 0) > 0);
@@ -257,7 +257,8 @@ export function renderCredits(s, seat, daily, quota) {
             lines.push('状态      额度已用尽');
         lines.push('');
     }
-    lines.push(`累计消耗  ${fmtCredits(s.total)} ${s.unit}（历史，非余额）`);
+    /* ── 消耗侧（credits-summary + seat-activity）：与余额无关的「已花掉」视角。 ── */
+    lines.push(`累计消耗  ${fmtCredits(s.total)} ${s.unit}`);
     if (s.peak !== null)
         lines.push(`单日峰值  ${fmtCredits(s.peak)}${s.peakDate ? `（${s.peakDate}）` : ''}`);
     if (seat.currentConsecutiveDays !== null) {
@@ -271,8 +272,16 @@ export function renderCredits(s, seat, daily, quota) {
         for (const d of daily)
             lines.push(`  ${d.date}  ${fmtCredits(d.value)}`);
     }
+    /* ── 口径：把每个数是什么讲清楚（它们来自不同端点，语义不同，最容易被误读）。 ── */
     lines.push('');
-    lines.push('注：每日可领 100 Credits（10:00 UTC+8 刷新，30 天有效）—— 用 `qoc checkin` 领取，');
-    lines.push('    赠送的 Credits 进「资源包」，即上面的剩余积分。');
+    lines.push('口径');
+    lines.push('  剩余积分  当前可用余额（openapi 的 v2/me/usage：套餐内 + 资源包）。');
+    lines.push('            签到赠送的 100 credits 进「资源包」，所以签完这里会涨。');
+    lines.push('  累计消耗  这个账号在近一年里，于该平台消耗掉的 credits 总量 —— 与余额无关，');
+    lines.push('            也不是「本工具转发的那部分」：它含官方客户端直连的用量（账号级口径）。');
+    lines.push('  单日峰值  近一年里消耗最多的一天（累计消耗的组成部分）。');
+    lines.push('  连续活跃  连续有消耗的天数（不是签到次数）。');
+    lines.push('');
+    lines.push(`每日可领 100 Credits（10:00 UTC+8 刷新，30 天有效）—— 用 \`qoc checkin\` 领取。`);
     return lines.join('\n');
 }

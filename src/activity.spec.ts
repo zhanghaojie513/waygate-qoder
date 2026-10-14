@@ -159,6 +159,11 @@ describe('渲染', () => {
     expect(text).toContain('累计消耗  241.81');
     expect(text).toContain('连续活跃  3 天');
     expect(text).toContain('qoc checkin');
+    /* 口径说明必须点明「累计消耗」是什么：账号级近一年、与余额无关、含客户端直连。 */
+    expect(text).toContain('口径');
+    expect(text).toContain('近一年');
+    expect(text).toContain('与余额无关');
+    expect(text).toContain('含官方客户端直连');
   });
 
   it('renderCredits：有余额时置顶显示资源包剩余（余额优先于累计消耗）', () => {
@@ -177,6 +182,5 @@ describe('渲染', () => {
     /* 余额行在累计消耗之前（用户先看到余额）。 */
     expect(text).toContain('剩余积分  495 / 500 credits');
     expect(text.indexOf('剩余积分')).toBeLessThan(text.indexOf('累计消耗'));
-    expect(text).toContain('（历史，非余额）');
   });
 });
