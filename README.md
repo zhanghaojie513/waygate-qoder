@@ -8,7 +8,7 @@
 
 [![npm](https://img.shields.io/npm/v/waygate-qoder?style=flat-square&color=CB3837&logo=npm&logoColor=white)](https://www.npmjs.com/package/waygate-qoder)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A520-3C873A?style=flat-square&logo=node.js&logoColor=white)
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows&logoColor=white)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D4?style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
 [快速开始](#快速开始) · [客户端配置](#客户端怎么填) · [工作原理](#工作原理) · [常见问题](#常见问题) · [相关项目](#相关项目)
@@ -17,12 +17,14 @@
 
 ---
 
-**读取本机 Qoder 客户端的登录态，在本机起一个 Anthropic / OpenAI 兼容的聊天端点** ——
+**用官方 CLI 的浏览器设备授权登录，在本机起一个 Anthropic / OpenAI 兼容的聊天端点** ——
 Cursor、Claude Code、Cherry Studio、任何能改 base_url 的工具，都能直接用你的订阅额度。
 
 - **零配置接入** —— 一条命令起服务，打印出「代理地址 + 密钥 + 模型 ID」，复制粘贴即可
+- **浏览器授权登录** —— `qoc login` 打印授权链接，浏览器选账号即可；**不需要装桌面客户端**，
+  服务器上也能自助登录（不再依赖 Windows / DPAPI）
 - **两个协议都认** —— `POST /v1/chat/completions`（OpenAI 兼容）与 `POST /v1/messages`（Anthropic 兼容）
-- **只在本机转** —— 读本机客户端文件、写 `~/.waygate/`、本机转发；不向任何第三方上传数据
+- **只在本机转** —— 写 `~/.waygate/`、本机转发；不向任何第三方上传数据
 
 ## 快速开始
 
@@ -30,14 +32,33 @@ Cursor、Claude Code、Cherry Studio、任何能改 base_url 的工具，都能�
 # 全局安装（之后命令就是 qoc）
 npm i -g waygate-qoder
 
+# 登录：打印授权链接（浏览器打开、选你的 Qoder 账号完成授权）
+qoc login
+
 # 启动
 qoc
 ```
 
-```
-途关 · Qoder CN 反代 v0.2.3
+`qoc login` 会**原地等你 2 分钟** —— 你在浏览器选完账号，终端**自动继续**，无需再来一次。
+若超过 2 分钟，它会提示你用 `qoc login-poll` 续取（授权会话 5 分钟内有效）：
 
-凭证    ✓ 已登录：你的账号（uid 01a0d156…）
+```
+请用浏览器打开下面的链接完成授权（选你的 Qoder 账号）：
+
+  https://qoder.cn/device/selectAccounts?challenge=...&nonce=...&machine_id=...&client_id=...
+
+完成后本终端会**自动继续**（最多等 120 秒）。
+
+  ⏳ 等待授权完成… 3s（最多再等 117s，按 Ctrl+C 可中断）
+
+✓ 登录成功 → ~/.waygate/qoc/credential.json
+账号 你的账号（uid 01a0d156…），令牌有效约 60 分钟
+```
+
+```
+途关 · Qoder CN 反代 v0.3.0
+
+凭证    ✓ 已登录：你的账号（uid 01a0d156…；令牌有效约 58 分钟）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)
 代理    http://127.0.0.1:8789/v1   （OpenAI 系客户端：Cursor / Cherry Studio / OpenAI SDK）
         http://127.0.0.1:8789      （Anthropic 系客户端：Claude Code，它自己会补 /v1）
@@ -55,21 +76,24 @@ qoc
 
 > 不想全局装：`git clone` 后 `npm install && npm run build && node dist/index.js`。
 
-**要求**：Node.js ≥ 20；本机装有 Qoder CN 桌面客户端**且已登录**。
+**要求**：Node.js ≥ 20；**不需要**装 Qoder 桌面客户端（登录走浏览器授权，Windows / macOS / Linux 都可以）。
 
 ## 命令
 
 ```bash
 qoc                  # 启动反代（同 qoc serve），打印模型 ID 与代理地址
 qoc models           # 只列出模型 ID（不起服务）
+qoc login            # 登录：打印授权链接并原地等 2 分钟（超时提示改用 login-poll）
+qoc login-poll       # 完成登录：浏览器授权后取票（`login` 等待超时也用它）
 qoc checkin          # 每日签到领 100 Credits（用本工具令牌代签，无需开客户端）
 qoc credits          # 积分概况（剩余余额 / 累计消耗 / 连续活跃）
 qoc doctor           # 自检：端口 / 凭证 / 模型清单 / 上游连通
-qoc login            # 重新读取客户端登录态（令牌过期时用）
+qoc login            # 登录：打印授权链接并原地等 2 分钟（超时提示改用 login-poll）
+qoc login-poll       # 完成登录：浏览器授权后取票（`login` 等待超时也用它）
 ```
 
 > [!NOTE]
-> `checkin` / `credits` 走 Qoder 的 OpenAPI（`openapi.qoder.com.cn`），鉴权只用客户端登录态里的
+> `checkin` / `credits` 走 Qoder 的 OpenAPI（`openapi.qoder.com.cn`），鉴权只用本工具维护的
 > Bearer 令牌 —— **签到不需要打开 Qoder 客户端**，也不会顶掉你的桌面登录。
 >
 > **签到规则（Qoder 官方标注）**：每日 **10:00（UTC+8）** 刷新，**领取后 30 天有效**，每天 100 Credits。
@@ -117,6 +141,7 @@ flowchart LR
   C[你的客户端<br/>Cursor / Claude Code]
   Q[qoc<br/>本机 8789]
   G[Qoder 网关]
+  B[浏览器<br/>授权页]
 
   C -->|OpenAI / Anthropic 协议| Q
   Q -->|COSY 签名协议| G
@@ -125,16 +150,22 @@ flowchart LR
     Q
     F[~/.waygate/qoc/credential.json]
   end
-  F -.->|qoc login 写入| Q
+  B -.->|qoc login 设备授权| F
+  F -.->|令牌自动续期写回| Q
 
   style Q fill:#EDE9FE,stroke:#8B5CF6,color:#1F2328
   style F fill:#FFFFFF,stroke:#D0D7DE,color:#1F2328
   style C fill:#FFFFFF,stroke:#D0D7DE,color:#1F2328
   style G fill:#FFFFFF,stroke:#D0D7DE,color:#1F2328
+  style B fill:#FFFFFF,stroke:#D0D7DE,color:#1F2328
   style local fill:#F6F8FA,stroke:#D0D7DE
 ```
 
-- **凭证**：Qoder 客户端把登录态存在 Chromium 的 `auth.v1.dat`（os_crypt **v10**，密钥由 Windows **DPAPI** 保护）。`qoc login` 用本机 DPAPI 解出令牌，写到 `~/.waygate/qoc/credential.json`（0600）。
+- **凭证**：走 **官方 Qoder CLI 的浏览器设备授权**（`qoc login`）—— 打印授权链接、你在浏览器选账号，
+  取票写到 `~/.waygate/qoc/credential.json`（0600）。**不读本机客户端文件、不做任何解密**，
+  故 Windows / macOS / Linux 都能用，服务器上也能自助登录。
+  拿到的令牌含 `security_oauth_token`，与桌面端同源 —— 直接喂给下面的 COSY 身份块。
+  令牌到期前 5 分钟**自动续期**（`deviceToken/refresh`；注意 refresh token 会轮换，本工具自动写回）。
 - **协议**：Qoder 网关用一套自研签名（**COSY** bearer + 自定义 base64 编码）与 SSE 帧格式；本工具把它翻译成标准 OpenAI SSE 形状下发。
 - **模型清单**：真拉网关 `/model/list`（不是内置假清单），模型 `id` 即客户端请求要填的 key。
 
@@ -143,15 +174,16 @@ flowchart LR
 
 ## 常见问题
 
-**要装 Qoder 客户端吗？** 要。本工具不提供账号，只是把你**已有**的客户端登录态转成本地 API。
+**要装 Qoder 客户端吗？** **不要。** 登录走浏览器设备授权（`qoc login`），任何能开浏览器的机器都行 —— 服务器上也能自助登录。
 
-**令牌过期了怎么办？** 在 Qoder 客户端重新登录，然后跑一次 `qoc login`；`qoc doctor` 会告诉你凭证是否还有效。
+**令牌过期了怎么办？** 本工具**自动续期**（到期前 5 分钟刷新并写回），通常无需干预。
+若 refresh token 也失效（例如同一账号在别处登录过），重跑 `qoc login`（等 2 分钟；超时用 `qoc login-poll` 续取）。
 
-**会不会把我的令牌上传？** 不会。全程只在本机读写：读客户端文件 → 写 `~/.waygate/` → 本机转发。代码开源可查。
+**会不会把我的令牌上传？** 不会。全程只在本机读写：浏览器授权 → 写 `~/.waygate/` → 本机转发。代码开源可查。
 
 **端口被占用？** `qoc --port 9790`，或 `qoc doctor` 看是哪一项没过。
 
-**支持 macOS / Linux 吗？** 暂只支持 Windows —— 客户端用 **DPAPI**（Windows 专有）保护密钥。
+**支持 macOS / Linux 吗？** 支持。登录是纯 HTTP 设备授权，没有平台专有依赖（旧版依赖 Windows DPAPI，已弃用）。
 
 > [!WARNING]
 > **想给局域网其他设备用？** 加 `--host 0.0.0.0` —— 请想清楚：那等于把你订阅的额度开放给能访问该端口的所有人。
