@@ -107,12 +107,11 @@ function describeIdentity(id: QoderIdentity): string {
   return `账号 ${id.name}（uid ${id.uid.slice(0, 8)}…）${left !== null ? `，令牌有效约 ${left} 分钟` : ''}`;
 }
 
-/** 登录成功后的互斥提示 —— 设备授权**不解除**互斥。 */
-function mutualExclusionNotice(): string {
+/** 登录成功后的提示 —— 讲清「与客户端并存」这个事实（避免用户白配专用账号）。 */
+function loginNotice(): string {
   return (
-    '\n⚠️  凭证互斥（必读）：Qoder 同一账号只能有一个有效会话。\n' +
-    '    请给本工具用**专用账号**，并且**永不用它登 Qoder 桌面客户端** ——\n' +
-    '    只要在别处登录一次，这里的令牌就会被顶掉（表现为 401，需重跑 qoc login）。\n'
+    '\n✓ 与桌面客户端**并存**：Qoder 支持多会话，本工具与客户端可用同一账号，互不顶下线。\n' +
+    '  （令牌只存在本机，刷新时自动续期。桌面端无需重新登录。）\n'
   );
 }
 
@@ -139,7 +138,7 @@ export function createQoderAdapter(opts: { baseUrl?: string; chatPath?: string }
         async run() {
           try {
             const id = await pollDeviceLogin(LOGIN_WAIT_MS, tickTo(process.stdout));
-            return '✓ 登录成功 → ' + credentialPath() + '\n' + describeIdentity(id) + '\n' + mutualExclusionNotice();
+            return '✓ 登录成功 → ' + credentialPath() + '\n' + describeIdentity(id) + '\n' + loginNotice();
           } catch (err) {
             if (err instanceof PendingLoginError) {
               return '⏳ 还没看到你的授权完成 —— 请先在浏览器里打开链接选账号完成授权，然后重跑：qoc login-poll';
@@ -208,7 +207,7 @@ export function createQoderAdapter(opts: { baseUrl?: string; chatPath?: string }
       );
       try {
         const id = await pollDeviceLogin(LOGIN_WAIT_MS, tickTo(out));
-        out.write('\n✓ 登录成功 → ' + credentialPath() + '\n' + describeIdentity(id) + '\n' + mutualExclusionNotice());
+        out.write('\n✓ 登录成功 → ' + credentialPath() + '\n' + describeIdentity(id) + '\n' + loginNotice());
       } catch (err) {
         if (err instanceof PendingLoginError) {
           out.write(

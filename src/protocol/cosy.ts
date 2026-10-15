@@ -85,13 +85,13 @@ XcW+ML9FoCI6AOvOzwIDAQAB
 
 const md5hex = (s: string): string => createHash('md5').update(s, 'utf8').digest('hex');
 
-/** 提供商凭证文件（`providers/<id>.qoder.json`）里的身份材料。
- *  来自官方客户端本地登录态（auth.v1.dat），由 tools/qoder-import-credential.mjs 导入。 */
+/** 身份材料（`~/.waygate/qoc/credential.json`，也用于 relay 的 `providers/<id>.qoder.json`）。
+ *  由 `qoc login`（官方 CLI 浏览器设备授权）取得。 */
 export interface QoderIdentity {
-  /** 访问令牌（dt-…）。过期后需从客户端重新导入（本服务不做刷新 —— 刷新会轮换
-   *  refresh token，连带把用户桌面客户端的登录态顶掉，见 translate 注释）。 */
+  /** 访问令牌（dt-…）。到期前自动续期（`deviceToken/refresh`）。 */
   token: string;
-  /** 刷新令牌（drt-…）。当前仅透传进身份块（网关校验其存在），不用于主动刷新。 */
+  /** 刷新令牌（drt-…）。用于续期。
+   *  ⚠️ 刷新会轮换它、必须写回；但**不影响桌面客户端** —— Qoder 多会话并存（实测 2026-10-16）。 */
   refreshToken: string;
   /** 用户 UUID（cosy-user 头与身份块都用）。 */
   uid: string;

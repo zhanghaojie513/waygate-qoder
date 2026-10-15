@@ -17,11 +17,14 @@
  * 参数与官方 CLI 完全一致（`client_id` 取 CLI 内的 prod 值），因此拿到的令牌与
  * COSY 聊天链路**天然兼容** —— CLI 自己就是靠这套登录后打同一个 COSY 网关的。
  *
- * ## ⚠️ 令牌与「客户端互斥」
- * Qoder 的 refresh token 会轮换、且**同一账号同时只有一个有效会话**：
- * 本工具与桌面客户端共用同一账号会互相顶下线。
- * ⇒ **建议配专用账号**：只用它跑 `qoc login`，此后不再用该账号登桌面客户端。
- * （设备授权改变的是"在哪台机器登录"，**不改变**"能有几个会话"。）
+ * ## ✅ 与桌面客户端**并存**（不互斥）
+ * Qoder 支持**多会话并存**：本工具与桌面客户端可同时用同一账号。
+ * 实测（2026-10-16）：设备授权后，客户端随即写入自己的登录态，**双方令牌都仍然有效**；
+ * 我们的令牌能正常列出模型、正常聊天。
+ * ⇒ **无需专用账号**，也不存在"谁把谁顶下线"。
+ *
+ * ⚠️ 但**刷新会轮换我们自己那条链的 refresh token**（`deviceToken/refresh` 返回新值），
+ * 所以刷新后**必须写回**——丢掉就等于把本工具的链弄断（与客户端无关）。
  */
 import { chmodSync, existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
@@ -304,7 +307,7 @@ export async function refreshDeviceIdentity(identity) {
     if (!res.ok) {
         const detail = String(parsed.errorMessage ?? parsed.errorCode ?? raw).slice(0, 200);
         throw new CredentialError(`刷新令牌被拒（HTTP ${res.status}）：${detail}。` +
-            'refresh token 可能已失效或被该账号的**另一处登录**顶掉了 —— 跑 `qoc login` 重新授权。');
+            'refresh token 可能已失效（长期未用/被撤销）—— 跑 `qoc login` 重新授权。');
     }
     const token = typeof parsed.device_token === 'string' ? parsed.device_token : '';
     if (!token)
