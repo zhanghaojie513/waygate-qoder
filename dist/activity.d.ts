@@ -17,12 +17,19 @@
  * ⚠️ 余额与累计消耗是**两个口径**：`v2/me/usage` 的 `addOnQuota`（资源包，签到赠送进这里）
  * 才是余额；`credits-summary.totalCredits` 是历史累计消耗。别混用。
  *
- * ## 签到规则（上游文案，实测）
+ * ## 签到规则（Qoder 官方标注，实测）
  * 「每天领 100 Credits」：每日 **10:00（UTC+8）** 刷新，领取后 **30 天**有效，
  * 有每日与累计上限。上游自带幂等（重复领返回已领状态，带 `replayed` 标记）。
  */
 /** 活动/积分接口的宿主（与聊天网关不同）。 */
 export declare const QODER_OPENAPI_BASE = "https://openapi.qoder.com.cn";
+/**
+ * 签到规则（Qoder **官方标注**原文口径）。
+ *
+ * 单独提为常量并被 `renderCheckin` / `renderCredits` 共用 —— 两处各写一遍迟早会漂移，
+ * 而这句话里的时刻与有效期都是上游定的，改错用户就会白等或误判"领了没用"。
+ */
+export declare const CHECKIN_RULE = "\u6BCF\u65E5 10:00\uFF08UTC+8\uFF09\u5237\u65B0\uFF0C\u9886\u53D6\u540E 30 \u5929\u6709\u6548";
 /** 一个活动（campaign）。 */
 export interface Campaign {
     campaignId: string;
@@ -118,7 +125,7 @@ export declare class QoderActivity {
         value: number;
     }>>;
 }
-/** 人读渲染：签到结果。 */
+/** 人读渲染：签到结果。恒带一行官方规则（时刻与有效期是上游定的，光看结果推不出来）。 */
 export declare function renderCheckin(r: ClaimResult): string;
 /** 人读渲染：积分总览（余额在前，累计消耗在后 —— 余额才是用户关心的）。 */
 export declare function renderCredits(s: CreditsSummary, seat: SeatActivity, daily: Array<{

@@ -17,7 +17,7 @@
  * ⚠️ 余额与累计消耗是**两个口径**：`v2/me/usage` 的 `addOnQuota`（资源包，签到赠送进这里）
  * 才是余额；`credits-summary.totalCredits` 是历史累计消耗。别混用。
  *
- * ## 签到规则（上游文案，实测）
+ * ## 签到规则（Qoder 官方标注，实测）
  * 「每天领 100 Credits」：每日 **10:00（UTC+8）** 刷新，领取后 **30 天**有效，
  * 有每日与累计上限。上游自带幂等（重复领返回已领状态，带 `replayed` 标记）。
  */
@@ -26,6 +26,14 @@ import { UpstreamError } from './errors.js';
 
 /** 活动/积分接口的宿主（与聊天网关不同）。 */
 export const QODER_OPENAPI_BASE = 'https://openapi.qoder.com.cn';
+
+/**
+ * 签到规则（Qoder **官方标注**原文口径）。
+ *
+ * 单独提为常量并被 `renderCheckin` / `renderCredits` 共用 —— 两处各写一遍迟早会漂移，
+ * 而这句话里的时刻与有效期都是上游定的，改错用户就会白等或误判"领了没用"。
+ */
+export const CHECKIN_RULE = '每日 10:00（UTC+8）刷新，领取后 30 天有效';
 /** Qoder 桌面端 clientType（COSY 身份头之一）。 */
 const CLIENT_TYPE = '10';
 const TIMEOUT_MS = 20_000;
@@ -175,7 +183,7 @@ export class QoderActivity {
         outcome: 'none',
         ok: true,
         granted: [],
-        message: claimed ? '今天已签到（每日 10:00 UTC+8 刷新）' : '当前没有可领取的活动',
+        message: claimed ? '今天已签到' : '当前没有可领取的活动',
       };
     }
 
@@ -286,10 +294,10 @@ function pickTitle(placements: unknown): string | null {
   return null;
 }
 
-/** 人读渲染：签到结果。 */
+/** 人读渲染：签到结果。恒带一行官方规则（时刻与有效期是上游定的，光看结果推不出来）。 */
 export function renderCheckin(r: ClaimResult): string {
   const icon = r.outcome === 'claimed' ? '✓' : r.outcome === 'none' ? '·' : '✓';
-  return `${icon} ${r.message}`;
+  return `${icon} ${r.message}\n\n${CHECKIN_RULE}（Qoder 官方标注）`;
 }
 
 /** 积分数值渲染：上游返回的是完整 double（如 0.008774678000000001），
@@ -348,6 +356,6 @@ export function renderCredits(
   lines.push('  单日峰值  近一年里消耗最多的一天（累计消耗的组成部分）。');
   lines.push('  连续活跃  连续有消耗的天数（不是签到次数）。');
   lines.push('');
-  lines.push(`每日可领 100 Credits（10:00 UTC+8 刷新，30 天有效）—— 用 \`qoc checkin\` 领取。`);
+  lines.push(`每日可领 100 Credits（${CHECKIN_RULE}）—— 用 \`qoc checkin\` 领取。`);
   return lines.join('\n');
 }

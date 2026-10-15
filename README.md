@@ -35,7 +35,7 @@ qoc
 ```
 
 ```
-途关 · Qoder CN 反代 v0.2.2
+途关 · Qoder CN 反代 v0.2.3
 
 凭证    ✓ 已登录：你的账号（uid 01a0d156…）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)
@@ -71,6 +71,9 @@ qoc login            # 重新读取客户端登录态（令牌过期时用）
 > [!NOTE]
 > `checkin` / `credits` 走 Qoder 的 OpenAPI（`openapi.qoder.com.cn`），鉴权只用客户端登录态里的
 > Bearer 令牌 —— **签到不需要打开 Qoder 客户端**，也不会顶掉你的桌面登录。
+>
+> **签到规则（Qoder 官方标注）**：每日 **10:00（UTC+8）** 刷新，**领取后 30 天有效**，每天 100 Credits。
+> 也就是说签到的积分**有保质期**，最迟在领取后 30 天内用掉；`qoc checkin` 的输出末尾会带上这句。
 >
 > **`credits` 里两个数的口径别混**（命令输出末尾也会再讲一遍）：
 >

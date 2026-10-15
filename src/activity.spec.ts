@@ -4,7 +4,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { QoderActivity, renderCheckin, renderCredits } from './activity.js';
+import { QoderActivity, CHECKIN_RULE, renderCheckin, renderCredits } from './activity.js';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -149,6 +149,26 @@ describe('渲染', () => {
   it('renderCheckin 三种结局', () => {
     expect(renderCheckin({ ok: true, outcome: 'claimed', granted: [], message: '签到成功 +100 CREDITS' })).toContain('✓');
     expect(renderCheckin({ ok: true, outcome: 'none', granted: [], message: '今天已签到' })).toContain('·');
+  });
+
+  /* ★ 官方规则必须恒常出现在输出里（三种结局都要）—— 时刻与有效期是上游定的，
+     光看结果推不出来，用户最容易误判「领了 30 天内不用就没了」。 */
+  it('renderCheckin 恒带 Qoder 官方规则（时刻 + 有效期）', () => {
+    for (const outcome of ['claimed', 'replayed', 'none'] as const) {
+      const text = renderCheckin({ ok: true, outcome, granted: [], message: 'x' });
+      expect(text).toContain('10:00（UTC+8）刷新');
+      expect(text).toContain('30 天有效');
+    }
+  });
+
+  /* 输出与 credits 里的口径句必须同源（都取 CHECKIN_RULE），否则改一处漏一处就会自相矛盾。 */
+  it('renderCredits 的签到提示与 renderCheckin 同源', () => {
+    const credits = renderCredits(
+      { total: null, peak: null, peakDate: null, unit: 'credits' },
+      { currentConsecutiveDays: null, maxConsecutiveDays: null, cumulativeActiveDays: null, lastActiveDate: null },
+      [],
+    );
+    expect(credits).toContain(CHECKIN_RULE);
   });
   it('renderCredits 含合计与提示', () => {
     const text = renderCredits(
