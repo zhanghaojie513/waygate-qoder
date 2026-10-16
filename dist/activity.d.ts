@@ -96,7 +96,14 @@ export interface SeatActivity {
 export declare class QoderActivity {
     private readonly token;
     constructor(token: () => Promise<string>);
-    /** 打一次 openapi（带 Cosy 身份头；信封解析容错）。 */
+    /**
+     * 打一次 openapi（带 Cosy 身份头；信封解析容错）。
+     *
+     * ★ 走 `fetchWithRetry`：该域实测有约 **70% 的连接超时率**（连续 10 次探测成功 3/超时 7），
+     * 但重试能拿到正常结果 —— 是**连接抖动**不是上游故障。原来"打一次就完"，
+     * 用户点签到七成概率看到 `fetch failed`。
+     * 重试只针对连接层失败（4xx 不重试，见 core 的 retry.ts 注释）。
+     */
     private call;
     /** 列活动（解析出可领项）。 */
     campaigns(): Promise<CampaignList>;

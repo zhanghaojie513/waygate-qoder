@@ -22,6 +22,7 @@
  * 有每日与累计上限。上游自带幂等（重复领返回已领状态，带 `replayed` 标记）。
  */
 
+import { describeFetchError, fetchWithRetry } from 'waygate-core';
 import { UpstreamError } from './errors.js';
 
 /** 活动/积分接口的宿主（与聊天网关不同）。 */
@@ -111,21 +112,37 @@ function num(v: unknown): number | null {
 export class QoderActivity {
   constructor(private readonly token: () => Promise<string>) {}
 
-  /** 打一次 openapi（带 Cosy 身份头；信封解析容错）。 */
+  /**
+   * 打一次 openapi（带 Cosy 身份头；信封解析容错）。
+   *
+   * ★ 走 `fetchWithRetry`：该域实测有约 **70% 的连接超时率**（连续 10 次探测成功 3/超时 7），
+   * 但重试能拿到正常结果 —— 是**连接抖动**不是上游故障。原来"打一次就完"，
+   * 用户点签到七成概率看到 `fetch failed`。
+   * 重试只针对连接层失败（4xx 不重试，见 core 的 retry.ts 注释）。
+   */
   private async call<T = Record<string, unknown>>(path: string, init: { method?: 'GET' | 'POST' } = {}): Promise<T> {
     const token = await this.token();
-    const res = await fetch(`${QODER_OPENAPI_BASE}${path}`, {
-      method: init.method ?? 'GET',
-      headers: {
-        authorization: `Bearer ${token}`,
-        accept: 'application/json',
-        'user-agent': 'Qoder',
-        'cosy-clienttype': CLIENT_TYPE,
-        ...(init.method === 'POST' ? { 'content-type': 'application/json' } : {}),
-      },
-      ...(init.method === 'POST' ? { body: '{}' } : {}),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
+    let res: Response;
+    try {
+      res = await fetchWithRetry(
+        `${QODER_OPENAPI_BASE}${path}`,
+        {
+          method: init.method ?? 'GET',
+          headers: {
+            authorization: `Bearer ${token}`,
+            accept: 'application/json',
+            'user-agent': 'Qoder',
+            'cosy-clienttype': CLIENT_TYPE,
+            ...(init.method === 'POST' ? { 'content-type': 'application/json' } : {}),
+          },
+          ...(init.method === 'POST' ? { body: '{}' } : {}),
+        },
+        { timeoutMs: TIMEOUT_MS },
+      );
+    } catch (err) {
+      /* 把 "fetch failed" 变成可行动的文案（带 cause 码），用户才知道该重试而不是重登。 */
+      throw new UpstreamError(`连不上 qoder openapi（${describeFetchError(err)}）—— 网络抖动，请重试`);
+    }
     const text = await res.text();
     let parsed: unknown = null;
     try {
