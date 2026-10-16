@@ -96,4 +96,43 @@ describe('qoder translate · toQoderRequest', () => {
     expect(toQoderRequest({ ...base, tools } as ChatRequestBody, 'qfmodel', 'personal_standard').tools).toEqual(tools);
     expect(toQoderRequest(base, 'qfmodel', 'personal_standard').tools).toBeUndefined();
   });
+
+  /*
+   * ★★ 2026-10-16 修复的回归钉：`enable_thinking` 必须与 `is_reasoning` **成对**。
+   *
+   * 此前只发 `is_reasoning: false`、从不发 `enable_thinking` —— 请求自相矛盾，
+   * 网关按自己的默认开着思考。qfmodel 上表现为「思考烧掉整个 token 预算、正文只剩一两个字」，
+   * 客户端报 empty_model_response。实测补上 `enable_thinking:false` 后 reasoning 归零。
+   */
+  describe('enable_thinking 与 is_reasoning 成对（qfmodel 空正文的修复）', () => {
+    it('未给 reasoning_effort → 两个字段都取 false（不是只发其中一个）', () => {
+      const b = toQoderRequest(base, 'qfmodel', 'personal_standard');
+      expect(b.model_config.is_reasoning).toBe(false);
+      expect(b.parameters.enable_thinking).toBe(false);
+    });
+
+    it('给了 reasoning_effort → 两个字段都取 true', () => {
+      const b = toQoderRequest({ ...base, reasoning_effort: 'high' } as ChatRequestBody, 'qfmodel', 'personal_standard');
+      expect(b.model_config.is_reasoning).toBe(true);
+      expect(b.parameters.enable_thinking).toBe(true);
+    });
+
+    it('reasoning_effort=none → 两个字段都取 false（显式关思考）', () => {
+      const b = toQoderRequest({ ...base, reasoning_effort: 'none' } as ChatRequestBody, 'qfmodel', 'personal_standard');
+      expect(b.model_config.is_reasoning).toBe(false);
+      expect(b.parameters.enable_thinking).toBe(false);
+    });
+
+    it('两处判定同源 —— 不存在 is_reasoning=true 而 enable_thinking=false 的组合', () => {
+      for (const eff of [undefined, 'none', 'low', 'medium', 'high']) {
+        const b = toQoderRequest(
+          eff === undefined ? base : ({ ...base, reasoning_effort: eff } as ChatRequestBody),
+          'qfmodel',
+          'personal_standard',
+        );
+        expect(b.parameters.enable_thinking).toBe(b.model_config.is_reasoning);
+        expect(b.chat_context.extra.modelConfig.is_reasoning).toBe(b.model_config.is_reasoning);
+      }
+    });
+  });
 });

@@ -107,6 +107,24 @@ export function toQoderRequest(body, qoderModelKey, userType) {
         if (body[k] !== undefined)
             parameters[k] = body[k];
     }
+    /*
+     * ★ 必须与 `model_config.is_reasoning` **成对出现**（2026-10-16 实测修复）。
+     *
+     * 此前只发 `is_reasoning: false`、**从不发 `enable_thinking`** —— 请求自相矛盾，
+     * 网关按它自己的默认（开着思考）走。后果在 qfmodel 上最明显：客户端**没要思考**，
+     * 模型却把整个 token 预算烧在 `reasoning_content` 上，`content` 只剩一两个字
+     * （实测极端 prompt：1850 reasoning token 对 4 字正文），ZCode 遂报
+     * 「模型未返回任何内容 / empty_model_response」。
+     *
+     * 官方 CLI 的做法是**两个字段一起发**：
+     *   `parameters = {...parameters, reasoning_effort: R, enable_thinking: ('none' !== R)}`
+     * 补齐 `enable_thinking` 后实测：qfmodel 的 reasoning 由 65 字 → **0 字**、
+     * token 40 → **1**，正文正常返回；qmodel_38max 同样有效（正文更完整）。
+     *
+     * 语义：客户端给了 effort 才开思考，没给就明确关掉 —— 与上面的 `is_reasoning`
+     * 同源判定，不引入第二套判断。
+     */
+    parameters.enable_thinking = isReasoning;
     if (body.max_tokens !== undefined)
         parameters.max_tokens = body.max_tokens;
     else if (parameters.max_tokens === undefined)
