@@ -1,6 +1,6 @@
 {
   "name": "waygate-qoder",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Qoder CN 本地反代：官方 CLI 浏览器设备授权登录，提供 Anthropic/OpenAI 兼容的本地聊天端点",
   "keywords": [
     "qoder",
@@ -46,5 +46,8 @@
     "@types/node": "^22.10.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "waygate-core": "^0.2.7"
   }
 }

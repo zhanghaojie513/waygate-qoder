@@ -56,7 +56,7 @@ qoc
 ```
 
 ```
-途关 · Qoder CN 反代 v0.3.3
+途关 · Qoder CN 反代 v0.3.4
 
 凭证    ✓ 已登录：你的账号（uid 01a0d156…；令牌有效约 58 分钟）
 上游    https://gateway.qoder.com.cn  (COSY 签名协议)
